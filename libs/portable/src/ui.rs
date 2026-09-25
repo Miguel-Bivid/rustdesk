@@ -5,7 +5,7 @@ use std::cell::RefCell;
 const GIF_DATA: &[u8] = include_bytes!("./res/spin.gif");
 const LABEL_DATA: &[u8] = include_bytes!("./res/label.png");
 const GIF_SIZE: i32 = 32;
-const BG_COLOR: [u8; 3] = [90, 90, 120];
+const BG_COLOR: [u8; 3] = [121, 56, 173];
 const BORDER_COLOR: [u8; 3] = [40, 40, 40];
 const GIF_DELAY: u64 = 30;
 
