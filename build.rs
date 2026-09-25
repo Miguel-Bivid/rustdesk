@@ -85,8 +85,22 @@ fn install_android_deps() {
     println!("cargo:rustc-link-lib=OpenSLES");
 }
 
+fn embed_custom_client() {
+    println!("cargo:rerun-if-changed=branding");
+    println!("cargo:rerun-if-env-changed=CUSTOM_CLIENT_FILE");
+    if let Ok(pk) = std::fs::read_to_string("branding/custom_client.pub") {
+        println!("cargo:rustc-env=CUSTOM_CLIENT_PUB_KEY={}", pk.trim());
+    }
+    let file = std::env::var("CUSTOM_CLIENT_FILE")
+        .unwrap_or_else(|_| "branding/private/out/custom-full.txt".to_owned());
+    if let Ok(config) = std::fs::read_to_string(&file) {
+        println!("cargo:rustc-env=BUILTIN_CUSTOM_CLIENT={}", config.trim());
+    }
+}
+
 fn main() {
     hbb_common::gen_version();
+    embed_custom_client();
     install_android_deps();
     #[cfg(all(windows, feature = "inline"))]
     build_manifest();

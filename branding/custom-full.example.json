@@ -1,0 +1,10 @@
+{
+  "app-name": "BividDesk",
+  "override-settings": {
+    "custom-rendezvous-server": "SERVIDOR:21116",
+    "relay-server": "SERVIDOR:21117",
+    "key": "CLAVE_PUBLICA_DEL_SERVIDOR",
+    "api-server": "",
+    "hide-server-settings": "Y"
+  }
+}

@@ -2258,6 +2258,10 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    if let Some(config) = option_env!("BUILTIN_CUSTOM_CLIENT") {
+        read_custom_client(config);
+        return;
+    }
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
@@ -2360,7 +2364,10 @@ pub fn read_custom_client(config: &str) {
         log::error!("Failed to decode custom client config");
         return;
     };
-    const KEY: &str = "5Qbwsde3unUcJBtrx9ZkvUmwFNoExHzpryHuPUdqlWM=";
+    const KEY: &str = match option_env!("CUSTOM_CLIENT_PUB_KEY") {
+        Some(key) => key,
+        None => "5Qbwsde3unUcJBtrx9ZkvUmwFNoExHzpryHuPUdqlWM=",
+    };
     let Some(pk) = get_rs_pk(KEY) else {
         log::error!("Failed to parse public key of custom client");
         return;
