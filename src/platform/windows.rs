@@ -2101,6 +2101,10 @@ pub fn prepare_custom_client_update() -> ResultType<bool> {
 }
 
 pub fn get_license_from_exe_name() -> ResultType<CustomServer> {
+    // Renaming the executable must not redirect a client with a signed config.
+    if option_env!("BUILTIN_CUSTOM_CLIENT").is_some() {
+        bail!("Server settings are fixed by the embedded config");
+    }
     let mut exe = std::env::current_exe()?.to_str().unwrap_or("").to_owned();
     // if defined portable appname entry, replace original executable name with it.
     if let Ok(portable_exe) = std::env::var(PORTABLE_APPNAME_RUNTIME_ENV_KEY) {

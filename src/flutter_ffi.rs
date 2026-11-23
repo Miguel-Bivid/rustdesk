@@ -2933,6 +2933,10 @@ pub mod server_side {
                 crate::read_custom_client(&custom_client_config);
             }
         }
+        // A service started at boot has no Flutter `initialize` to load this.
+        if let Some(config) = option_env!("BUILTIN_CUSTOM_CLIENT") {
+            crate::read_custom_client(config);
+        }
         std::thread::spawn(move || start_server(true));
     }
 

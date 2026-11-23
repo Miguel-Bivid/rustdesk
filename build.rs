@@ -85,6 +85,28 @@ fn install_android_deps() {
     println!("cargo:rustc-link-lib=OpenSLES");
 }
 
+// At runtime a missing or badly signed config only logs an error and the client
+// falls back to the public servers, so a release build must not get that far.
+fn require_valid_custom_client(file: &str) {
+    use hbb_common::{base64, sodiumoxide::crypto::sign};
+
+    let pk = std::fs::read_to_string("branding/custom_client.pub")
+        .unwrap_or_else(|e| panic!("Cannot read branding/custom_client.pub: {e}"));
+    let config = std::fs::read_to_string(file)
+        .unwrap_or_else(|e| panic!("Cannot read signed client config {file}: {e}"));
+    #[allow(deprecated)]
+    let pk = base64::decode(pk.trim())
+        .ok()
+        .and_then(|pk| sign::PublicKey::from_slice(&pk))
+        .unwrap_or_else(|| panic!("branding/custom_client.pub is not a valid public key"));
+    #[allow(deprecated)]
+    let signed = base64::decode(config.trim())
+        .unwrap_or_else(|e| panic!("Signed client config {file} is not base64: {e}"));
+    if sign::verify(&signed, &pk).is_err() {
+        panic!("Signed client config {file} does not match branding/custom_client.pub");
+    }
+}
+
 fn embed_custom_client() {
     println!("cargo:rerun-if-changed=branding");
     println!("cargo:rerun-if-env-changed=CUSTOM_CLIENT_FILE");
@@ -95,6 +117,9 @@ fn embed_custom_client() {
         .unwrap_or_else(|_| "branding/private/out/custom-full.txt".to_owned());
     if let Ok(config) = std::fs::read_to_string(&file) {
         println!("cargo:rustc-env=BUILTIN_CUSTOM_CLIENT={}", config.trim());
+    }
+    if std::env::var("PROFILE").as_deref() == Ok("release") {
+        require_valid_custom_client(&file);
     }
 }
 
