@@ -3,14 +3,15 @@
 #
 #   branding/build_android.sh [arm64-v8a|armeabi-v7a|x86_64] [config.json]
 #
-# Por defecto: arm64-v8a y branding/private/custom-full.json.
+# Por defecto: arm64-v8a y la configuracion ya firmada del repo (branding/custom-full.txt).
+# Con config.json se firma ese archivo, lo que necesita branding/private/custom_client.sk.
 # Requiere: ANDROID_NDK_HOME (r28c), VCPKG_ROOT, Flutter 3.24.5 parcheado, Rust 1.75,
-# cargo-ndk 3.1.2, flutter_rust_bridge_codegen 1.80.1 y branding/private/ copiado.
+# cargo-ndk 3.1.2 y flutter_rust_bridge_codegen 1.80.1.
 # Sin flutter/android/key.properties el APK se firma con la clave debug (como el CI).
 set -euo pipefail
 
 ABI=${1:-arm64-v8a}
-CONFIG=${2:-branding/private/custom-full.json}
+CONFIG=${2:-}
 cd "$(dirname "$(readlink -f "$0")")/.."
 
 case "$ABI" in
@@ -22,10 +23,15 @@ esac
 : "${ANDROID_NDK_HOME:?define ANDROID_NDK_HOME (NDK r28c)}"
 : "${VCPKG_ROOT:?define VCPKG_ROOT}"
 
-# 1. Configuracion firmada: build.rs la incrusta en librustdesk.so
-[ -f branding/private/custom_client.sk ] || { echo "Falta branding/private (copialo del equipo de firma)" >&2; exit 1; }
-python3 branding/sign_custom_client.py sign "$CONFIG"
-export CUSTOM_CLIENT_FILE="$PWD/branding/private/out/$(basename "${CONFIG%.*}").txt"
+# 1. Configuracion firmada: build.rs la incrusta en librustdesk.so y aborta si la firma
+# no corresponde a branding/custom_client.pub
+if [ -z "$CONFIG" ]; then
+    export CUSTOM_CLIENT_FILE="$PWD/branding/custom-full.txt"
+else
+    [ -f branding/private/custom_client.sk ] || { echo "Firmar $CONFIG necesita branding/private/custom_client.sk" >&2; exit 1; }
+    python3 branding/sign_custom_client.py sign "$CONFIG"
+    export CUSTOM_CLIENT_FILE="$PWD/branding/private/out/$(basename "${CONFIG%.*}").txt"
+fi
 
 # 2. Bridge Rust <-> Dart (no esta en git)
 (cd flutter && flutter pub get)
