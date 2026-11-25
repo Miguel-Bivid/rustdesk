@@ -556,6 +556,9 @@ pub enum Data {
         hotx: i32,
         hoty: i32,
     },
+    /// UI -> service: register with the rendezvous server again now rather than at the
+    /// next retry (the "Test connection" button).
+    RestartRendezvous,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -1043,6 +1046,9 @@ async fn handle(data: Data, stream: &mut Connection) {
         }
         Data::TestRendezvousServer => {
             crate::test_rendezvous_server();
+        }
+        Data::RestartRendezvous => {
+            crate::rendezvous_mediator::RendezvousMediator::restart();
         }
         Data::Deployed => {
             crate::rendezvous_mediator::NEEDS_DEPLOY.store(false, Ordering::SeqCst);
@@ -1978,6 +1984,21 @@ pub async fn test_rendezvous_server() -> ResultType<()> {
     let mut c = connect(1000, "").await?;
     c.send(&Data::TestRendezvousServer).await?;
     Ok(())
+}
+
+pub async fn restart_rendezvous() -> ResultType<()> {
+    let mut c = connect(1000, "").await?;
+    c.send(&Data::RestartRendezvous).await?;
+    Ok(())
+}
+
+pub async fn get_online_state() -> ResultType<i64> {
+    let mut c = connect(1000, "").await?;
+    c.send(&Data::OnlineStatus(None)).await?;
+    if let Some(Data::OnlineStatus(Some((state, _)))) = c.next_timeout(1000).await? {
+        return Ok(state);
+    }
+    bail!("No online status from the service");
 }
 
 #[tokio::main(flavor = "current_thread")]

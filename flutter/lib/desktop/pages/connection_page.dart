@@ -78,6 +78,16 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
               .marginOnly(left: em),
         );
 
+    testConnectionWidget() => Offstage(
+          offstage: _svcStopped.value,
+          child: InkWell(
+                  onTap: showTestConnectionDialog,
+                  child: Text(translate("Test connection"),
+                      style: TextStyle(
+                          decoration: TextDecoration.underline, fontSize: em)))
+              .marginOnly(left: em),
+        );
+
     setupServerWidget() => Flexible(
           child: Offstage(
             offstage: !(!_svcStopped.value &&
@@ -129,6 +139,7 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
               width: isIncomingOnly ? 226 : null,
               child: _buildConnStatusMsg(),
             ),
+            if (!isIncomingOnly) testConnectionWidget(),
             // stop
             if (!isIncomingOnly) startServiceWidget(),
             // ready && public
@@ -145,6 +156,10 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
                 basicWidget(),
                 Align(
                         child: startServiceWidget(),
+                        alignment: Alignment.centerLeft)
+                    .marginOnly(top: 2.0, left: 22.0),
+                Align(
+                        child: testConnectionWidget(),
                         alignment: Alignment.centerLeft)
                     .marginOnly(top: 2.0, left: 22.0),
               ],
@@ -185,6 +200,82 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
       stateGlobal.videoConnCount.value = status['video_conn_count'] as int;
     } catch (_) {}
   }
+}
+
+/// Probes the server ports and has the service register again now, so a
+/// recovered network or server shows up without restarting the program.
+void showTestConnectionDialog() {
+  final result = Rx<Map<String, dynamic>?>(null);
+  bind.mainTestServerConnectivity().then((r) {
+    try {
+      result.value = jsonDecode(r) as Map<String, dynamic>;
+    } catch (_) {
+      result.value = {};
+    }
+  });
+  const okColor = Color.fromARGB(255, 50, 190, 166);
+  const failColor = Color.fromARGB(255, 224, 79, 95);
+  Widget statusLine(bool ok, String text) => Row(children: [
+        Icon(ok ? Icons.check_circle : Icons.cancel,
+                size: 18, color: ok ? okColor : failColor)
+            .marginOnly(right: 8),
+        Flexible(child: Text(text)),
+      ]).marginOnly(bottom: 8);
+  Widget probeLine(String label, dynamic probe) {
+    final ms = probe is Map ? (probe['ms'] as int? ?? -1) : -1;
+    final addr = probe is Map ? probe['addr']?.toString() ?? '' : '';
+    return statusLine(
+        ms >= 0,
+        '${translate(label)} ($addr): '
+        '${ms >= 0 ? '${translate('OK')}, $ms ms' : translate('No response')}');
+  }
+
+  gFFI.dialogManager.show((setState, close, context) {
+    return CustomAlertDialog(
+      title: Text(translate('Test connection')),
+      content: Obx(() {
+        final r = result.value;
+        if (r == null) {
+          return Row(children: [
+            const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                .marginOnly(right: 12),
+            Text(translate('Testing connection...')),
+          ]);
+        }
+        final idOk = r['id'] is Map && (r['id']['ms'] as int? ?? -1) >= 0;
+        final service = r['service'] == true;
+        final registered = r['registered'] == true;
+        String? tip;
+        if (!idOk) {
+          tip = 'test_connection_unreachable_tip';
+        } else if (service && !registered) {
+          tip = 'test_connection_udp_tip';
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            probeLine('ID Server', r['id']),
+            probeLine('Relay Server', r['relay']),
+            probeLine('NAT test port', r['nat']),
+            statusLine(
+                registered,
+                translate(!service
+                    ? 'Service is not running'
+                    : registered
+                        ? 'Registered with the server'
+                        : 'Could not register with the server')),
+            if (tip != null) Text(translate(tip)).marginOnly(top: 4),
+          ],
+        );
+      }),
+      actions: [dialogButton('Close', onPressed: close)],
+      onCancel: close,
+    );
+  });
 }
 
 /// Connection page for connecting to a remote peer.

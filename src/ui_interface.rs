@@ -358,6 +358,86 @@ pub fn test_if_valid_server(host: String, test_with_proxy: bool) -> String {
     hbb_common::socket_client::test_if_valid_server(&host, test_with_proxy)
 }
 
+/// The "Test connection" button: probes the server's TCP ports from here and has the
+/// service register again right away instead of at its next retry, so a recovered
+/// network or server shows up without restarting the program.
+#[tokio::main(flavor = "current_thread")]
+pub async fn test_server_connectivity() -> String {
+    let id_server = crate::check_port(Config::get_rendezvous_server(), RENDEZVOUS_PORT);
+    let mut relay_server = Config::get_option("relay-server");
+    if relay_server.is_empty() {
+        relay_server = crate::increase_port(&id_server, 1);
+    }
+    let relay_server = crate::check_port(relay_server, RENDEZVOUS_PORT + 1);
+    let nat_server = crate::increase_port(&id_server, -1);
+    let (nat, id, relay, registered) = tokio::join!(
+        probe_tcp(nat_server),
+        probe_tcp(id_server),
+        probe_tcp(relay_server),
+        register_again(),
+    );
+    serde_json::json!({
+        "nat": nat,
+        "id": id,
+        "relay": relay,
+        "service": registered.is_some(),
+        "registered": registered.unwrap_or(false),
+    })
+    .to_string()
+}
+
+async fn probe_tcp(addr: String) -> serde_json::Value {
+    let start = std::time::Instant::now();
+    let ms = match hbb_common::socket_client::connect_tcp(addr.clone(), 5_000).await {
+        Ok(_) => start.elapsed().as_millis() as i64,
+        Err(err) => {
+            log::info!("Connection test: {addr} failed: {err}");
+            -1
+        }
+    };
+    serde_json::json!({ "addr": addr, "ms": ms })
+}
+
+/// `None` when the service is not running.
+async fn register_again() -> Option<bool> {
+    if config::option2bool("stop-service", &get_option("stop-service")) {
+        return None;
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    if let Err(err) = ipc::restart_rendezvous().await {
+        log::info!("Connection test: service unreachable: {err}");
+        return None;
+    }
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    crate::RendezvousMediator::restart();
+    // The service acts on the restart at its next one-second tick; reading earlier
+    // could return the state from before it.
+    hbb_common::sleep(2.).await;
+    // Sending the restart succeeds even when the service then rejects the connection,
+    // so the service only counts as reached once it answers a status query.
+    let mut reached = false;
+    for _ in 0..32 {
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        let state = match ipc::get_online_state().await {
+            Ok(state) => {
+                reached = true;
+                state
+            }
+            Err(_) => 0,
+        };
+        #[cfg(any(target_os = "android", target_os = "ios"))]
+        let state = {
+            reached = true;
+            config::get_online_state()
+        };
+        if state > 0 {
+            return Some(true);
+        }
+        hbb_common::sleep(0.25).await;
+    }
+    reached.then_some(false)
+}
+
 #[inline]
 #[cfg(feature = "flutter")]
 #[cfg(not(any(target_os = "android", target_os = "ios")))]

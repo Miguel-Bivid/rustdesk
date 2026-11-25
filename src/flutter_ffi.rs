@@ -1067,6 +1067,10 @@ pub fn main_test_if_valid_server(server: String, test_with_proxy: bool) -> Strin
     test_if_valid_server(server, test_with_proxy)
 }
 
+pub fn main_test_server_connectivity() -> String {
+    crate::ui_interface::test_server_connectivity()
+}
+
 pub fn main_set_socks(proxy: String, username: String, password: String) {
     set_socks(proxy, username, password)
 }

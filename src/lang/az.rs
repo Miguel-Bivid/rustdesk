@@ -786,6 +786,14 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Default public server", ""),
         ("Server key", ""),
         ("Not set", ""),
-        ("Automatic", "")
+        ("Automatic", ""),
+        ("Test connection", ""),
+        ("Testing connection...", ""),
+        ("No response", ""),
+        ("NAT test port", ""),
+        ("Registered with the server", ""),
+        ("Could not register with the server", ""),
+        ("test_connection_unreachable_tip", ""),
+        ("test_connection_udp_tip", "")
     ].iter().cloned().collect();
 }

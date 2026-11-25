@@ -786,6 +786,14 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("Default public server", "Servidor público por defecto"),
         ("Server key", "Clave del servidor"),
         ("Not set", "Sin configurar"),
-        ("Automatic", "Automático")
+        ("Automatic", "Automático"),
+        ("Test connection", "Probar conexión"),
+        ("Testing connection...", "Probando conexión..."),
+        ("No response", "Sin respuesta"),
+        ("NAT test port", "Puerto de prueba NAT"),
+        ("Registered with the server", "Registrado en el servidor"),
+        ("Could not register with the server", "No se pudo registrar en el servidor"),
+        ("test_connection_unreachable_tip", "El servidor de IDs no responde. Revisa la conexión a internet, el cortafuegos o el proxy."),
+        ("test_connection_udp_tip", "El servidor responde por TCP pero el registro ha fallado. Probablemente un cortafuegos bloquea el puerto UDP 21116.")
     ].iter().cloned().collect();
 }
