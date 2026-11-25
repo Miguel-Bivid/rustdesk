@@ -4100,6 +4100,18 @@ void checkUpdate() {
 /// Set with [StateGlobal.updateUrl] when a custom client's manifest lists a newer version.
 String customClientNewVersion = '';
 
+/// A custom client takes these from its signed config rather than sending its users
+/// to RustDesk's privacy statement and site; an empty value hides the link.
+String get privacyStatementUrl => bind.isCustomClient()
+    ? bind.mainGetHardOption(key: 'privacy-url')
+    : 'https://rustdesk.com/privacy.html';
+String get termsUrl => bind.isCustomClient()
+    ? bind.mainGetHardOption(key: 'terms-url')
+    : 'https://rustdesk.com/privacy.html';
+String get websiteUrl => bind.isCustomClient()
+    ? bind.mainGetHardOption(key: 'website-url')
+    : 'https://rustdesk.com';
+
 // https://github.com/flutter/flutter/issues/153560#issuecomment-2497160535
 // For TextField, TextFormField
 extension WorkaroundFreezeLinuxMint on Widget {

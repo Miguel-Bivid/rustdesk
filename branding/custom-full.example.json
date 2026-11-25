@@ -1,11 +1,15 @@
 {
   "app-name": "BividDesk",
   "update-url": "https://SERVIDOR_WEB/bividdesk/latest.json",
+  "privacy-url": "https://WEB_DE_LA_EMPRESA/privacidad",
+  "terms-url": "https://WEB_DE_LA_EMPRESA/condiciones",
+  "website-url": "https://WEB_DE_LA_EMPRESA",
   "override-settings": {
     "custom-rendezvous-server": "SERVIDOR:21116",
     "relay-server": "SERVIDOR:21117",
     "key": "CLAVE_PUBLICA_DEL_SERVIDOR",
     "api-server": "",
-    "hide-server-settings": "Y"
+    "hide-server-settings": "Y",
+    "allow-auto-update": "N"
   }
 }

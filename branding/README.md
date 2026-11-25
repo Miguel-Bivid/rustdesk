@@ -21,6 +21,14 @@ python build.py --flutter --hwcodec --vram
     `relay-server`, `key`, `api-server`, `hide-*`...).
   - `default-settings`: valores iniciales que el usuario puede cambiar.
   - Claves de primer nivel (`conn-type`: `incoming` / `outgoing`, `disable-settings`...).
+  - `privacy-url`, `terms-url` y `website-url` (primer nivel): política de
+    privacidad ("Acerca de"), condiciones que se aceptan en la pantalla de
+    instalación, y sitio web ("Acerca de"). Si falta una, ese enlace no se
+    muestra; nunca apuntan a rustdesk.com.
+  - `allow-auto-update: N` en `override-settings`: el actualizador de RustDesk
+    instalaría el RustDesk oficial encima, sin nuestra configuración.
+    `src/updater.rs` ya lo impide en el cliente personalizado; el override además
+    deja fija la casilla "Actualización automática".
 - `CUSTOM_CLIENT_FILE=<ruta>` permite compilar con otra configuración firmada
   (p. ej. la variante QuickSupport).
 

@@ -1027,12 +1027,14 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
           tiles: [
             SettingsTile(
                 onPressed: (context) async {
-                  await launchUrl(Uri.parse(url));
+                  if (websiteUrl.isNotEmpty) {
+                    await launchUrl(Uri.parse(websiteUrl));
+                  }
                 },
                 title: Text(translate("Version: ") + version),
                 value: Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('rustdesk.com',
+                  child: Text(Uri.tryParse(websiteUrl)?.host ?? '',
                       style: TextStyle(
                         decoration: TextDecoration.underline,
                       )),
@@ -1062,10 +1064,11 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                   child: Text(_myId),
                 ),
                 leading: Icon(Icons.perm_identity)),
+            if (privacyStatementUrl.isNotEmpty)
             SettingsTile(
               title: Text(translate("Privacy Statement")),
               onPressed: (context) =>
-                  launchUrlString('https://rustdesk.com/privacy.html'),
+                  launchUrlString(privacyStatementUrl),
               leading: Icon(Icons.privacy_tip),
             )
           ],

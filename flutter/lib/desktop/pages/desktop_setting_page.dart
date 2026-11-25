@@ -2554,17 +2554,19 @@ class _AboutState extends State<_About> {
               SelectionArea(
                   child: Text('${translate('ID')}: $myId')
                       .marginSymmetric(vertical: 4.0)),
+              if (privacyStatementUrl.isNotEmpty)
               InkWell(
                   onTap: () {
-                    launchUrlString('https://rustdesk.com/privacy.html');
+                    launchUrlString(privacyStatementUrl);
                   },
                   child: Text(
                     translate('Privacy Statement'),
                     style: linkStyle,
                   ).marginSymmetric(vertical: 4.0)),
+              if (websiteUrl.isNotEmpty)
               InkWell(
                   onTap: () {
-                    launchUrlString('https://rustdesk.com');
+                    launchUrlString(websiteUrl);
                   },
                   child: Text(
                     translate('Website'),
