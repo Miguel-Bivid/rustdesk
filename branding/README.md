@@ -10,7 +10,7 @@ incrusta en el binario al compilar (`build.rs` → `embed_custom_client`).
 ```
 python branding/sign_custom_client.py genkey          # solo la primera vez
 python branding/sign_custom_client.py sign branding/private/custom-full.json
-python build.py --flutter
+python build.py --flutter --hwcodec --vram
 ```
 
 - `private/` no se sube a git: contiene la clave privada de firma, la
@@ -23,6 +23,25 @@ python build.py --flutter
   - Claves de primer nivel (`conn-type`: `incoming` / `outgoing`, `disable-settings`...).
 - `CUSTOM_CLIENT_FILE=<ruta>` permite compilar con otra configuración firmada
   (p. ej. la variante QuickSupport).
+
+## Firma de código de Windows
+
+`build.py` firma `BividDesk.exe` y las DLL antes de empaquetarlas (son lo que
+queda instalado como servicio) y después el `BividDesk-<versión>.exe` final.
+El comando de firma sale de `BIVIDDESK_SIGN_CMD`; los archivos se añaden al
+final. Si no está definida, compila igualmente y avisa de que no hay firma; si
+la firma falla, la compilación se detiene.
+
+```powershell
+# Certificado en token USB o almacén de Windows (por huella)
+$env:BIVIDDESK_SIGN_CMD = '"C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe" sign /fd sha256 /tr http://timestamp.digicert.com /td sha256 /sha1 HUELLA_DEL_CERTIFICADO'
+# Azure Trusted Signing
+$env:BIVIDDESK_SIGN_CMD = '"...\signtool.exe" sign /fd sha256 /tr http://timestamp.acs.microsoft.com /td sha256 /dlib C:\ruta\Azure.CodeSigning.Dlib.dll /dmdf C:\ruta\metadata.json'
+python build.py --flutter --hwcodec --vram
+```
+
+Usa siempre sello de tiempo (`/tr`): sin él la firma deja de ser válida cuando
+caduca el certificado.
 
 ## Iconos
 

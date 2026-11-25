@@ -926,6 +926,24 @@ def build_flutter_arch_manjaro(version, features):
     system2('HBB=`pwd`/.. FLUTTER=1 makepkg -f')
 
 
+# Each certificate provider (USB token, cloud HSM, Azure Trusted Signing) needs different
+# signtool arguments, so the whole command comes from the environment and the files are
+# appended to it. Without it the build still finishes, for development, but says so.
+def sign_windows_files(paths):
+    cmd = os.environ.get('BIVIDDESK_SIGN_CMD')
+    if not cmd:
+        print(f'WARNING: BIVIDDESK_SIGN_CMD is not set, {len(paths)} file(s) left unsigned')
+        return
+    # Not system2: cmd.exe strips the quotes around a signtool path with spaces.
+    cmd += ''.join(f' "{p}"' for p in paths)
+    try:
+        result = subprocess.run(cmd).returncode
+    except OSError as e:
+        result = e
+    if result != 0:
+        sys.exit(f'Signing failed ({result}): `{cmd}`')
+
+
 def build_flutter_windows(version, features, skip_portable_pack):
     if not skip_cargo:
         system2(f'cargo build --locked --features {features} --lib --release')
@@ -937,6 +955,9 @@ def build_flutter_windows(version, features, skip_portable_pack):
     os.chdir('..')
     shutil.copy2('target/release/deps/dylib_virtual_display.dll',
                  flutter_build_dir_2)
+    # Before packing: these are the files that stay installed and run as the service.
+    sign_windows_files(sorted(glob.glob(f'{flutter_build_dir_2}/*.exe') +
+                              glob.glob(f'{flutter_build_dir_2}/*.dll')))
     if skip_portable_pack:
         return
     os.chdir('libs/portable')
@@ -946,6 +967,7 @@ def build_flutter_windows(version, features, skip_portable_pack):
     os.chdir('../..')
     output = f'./BividDesk-{version}.exe'
     os.replace('./target/release/rustdesk-portable-packer.exe', output)
+    sign_windows_files([output])
     print(f'output location: {os.path.abspath(output)}')
 
 
