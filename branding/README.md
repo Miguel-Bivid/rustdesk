@@ -24,6 +24,29 @@ python build.py --flutter --hwcodec --vram
 - `CUSTOM_CLIENT_FILE=<ruta>` permite compilar con otra configuración firmada
   (p. ej. la variante QuickSupport).
 
+## Aviso de nueva versión
+
+El actualizador de RustDesk está desactivado en el cliente personalizado. En su
+lugar, si la configuración firmada trae `update-url` (clave de primer nivel), el
+cliente descarga ese JSON al arrancar y, si hay una versión mayor que la suya,
+muestra un aviso con un botón que abre la descarga en el navegador. No descarga
+ni instala nada por sí mismo. Sin `update-url` no se consulta nada.
+
+```json
+{
+  "windows": { "version": "1.5.1", "url": "https://SERVIDOR_WEB/bividdesk/BividDesk-1.5.1.exe" },
+  "android": { "version": "1.5.1", "url": "https://SERVIDOR_WEB/bividdesk/BividDesk-1.5.1-arm64-v8a.apk" },
+  "android-arm": { "version": "1.5.1", "url": "https://SERVIDOR_WEB/bividdesk/BividDesk-1.5.1-armeabi-v7a.apk" }
+}
+```
+
+- La entrada `<so>-<arquitectura>` (`android-arm`, `android-x86_64`...) tiene
+  prioridad sobre la de `<so>`. Las plataformas que no aparecen no reciben aviso.
+- `update-url` y cada `url` deben ser `https://` con certificado válido.
+- Publica el JSON **después** de subir los instaladores.
+- El cliente personalizado no muestra la opción de buscar actualizaciones; para
+  dejar de avisar, quita `update-url` y vuelve a firmar y compilar.
+
 ## Firma de código de Windows
 
 `build.py` firma `BividDesk.exe` y las DLL antes de empaquetarlas (son lo que

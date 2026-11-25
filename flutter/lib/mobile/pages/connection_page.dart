@@ -86,6 +86,8 @@ class _ConnectionPageState extends State<ConnectionPage> {
             delegate: SliverChildListDelegate([
           if (!bind.isCustomClient() && !isIOS)
             Obx(() => _buildUpdateUI(stateGlobal.updateUrl.value)),
+          if (bind.isCustomClient() && !isIOS)
+            Obx(() => _buildCustomClientUpdateUI(stateGlobal.updateUrl.value)),
           _buildRemoteIDTextField(),
         ])),
         SliverFillRemaining(
@@ -134,6 +136,25 @@ class _ConnectionPageState extends State<ConnectionPage> {
               //
               // But it is better to add the check.
               await launchUrl(Uri.parse(url));
+            },
+            child: Container(
+                alignment: AlignmentDirectional.center,
+                width: double.infinity,
+                color: Colors.pinkAccent,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(translate('Download new version'),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold))));
+  }
+
+  /// A custom client's manifest gives the download url itself.
+  Widget _buildCustomClientUpdateUI(String updateUrl) {
+    return updateUrl.isEmpty
+        ? const SizedBox(height: 0)
+        : InkWell(
+            onTap: () async {
+              await launchUrl(Uri.parse(updateUrl),
+                  mode: LaunchMode.externalApplication);
             },
             child: Container(
                 alignment: AlignmentDirectional.center,

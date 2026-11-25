@@ -4081,8 +4081,24 @@ void checkUpdate() {
         bind.mainGetSoftwareUpdateUrl();
       });
     }
+    if (bind.isCustomClient()) {
+      platformFFI.registerEventHandler(
+          kCheckSoftwareUpdateFinish, kCheckSoftwareUpdateFinish,
+          (Map<String, dynamic> evt) async {
+        if (evt['url'] is String && evt['version'] is String) {
+          customClientNewVersion = evt['version'];
+          stateGlobal.updateUrl.value = evt['url'];
+        }
+      });
+      Timer(const Duration(seconds: 1), () async {
+        bind.mainGetSoftwareUpdateUrl();
+      });
+    }
   }
 }
+
+/// Set with [StateGlobal.updateUrl] when a custom client's manifest lists a newer version.
+String customClientNewVersion = '';
 
 // https://github.com/flutter/flutter/issues/153560#issuecomment-2497160535
 // For TextField, TextFormField

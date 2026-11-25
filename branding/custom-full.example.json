@@ -1,5 +1,6 @@
 {
   "app-name": "BividDesk",
+  "update-url": "https://SERVIDOR_WEB/bividdesk/latest.json",
   "override-settings": {
     "custom-rendezvous-server": "SERVIDOR:21116",
     "relay-server": "SERVIDOR:21117",

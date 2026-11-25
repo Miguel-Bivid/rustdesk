@@ -1000,6 +1000,7 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 
 pub fn check_software_update() {
     if is_custom_client() {
+        check_custom_client_update();
         return;
     }
     let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
@@ -1055,6 +1056,59 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
         *SOFTWARE_UPDATE_URL.lock().unwrap() = response_url;
     } else {
         *SOFTWARE_UPDATE_URL.lock().unwrap() = "".to_string();
+    }
+    Ok(())
+}
+
+// The stock check asks api.rustdesk.com about RustDesk releases. A custom client
+// instead reads the manifest named by `update-url` in its signed config, and only
+// tells the user; nothing is downloaded or installed, so `SOFTWARE_UPDATE_URL`,
+// which drives the stock installer, is left alone.
+fn check_custom_client_update() {
+    let url = config::HARD_SETTINGS
+        .read()
+        .unwrap()
+        .get("update-url")
+        .cloned()
+        .unwrap_or_default();
+    if url.is_empty() {
+        return;
+    }
+    let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
+    if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
+        std::thread::spawn(move || allow_err!(do_check_custom_client_update(&url)));
+    }
+}
+
+// Manifest: {"windows": {"version": "1.5.1", "url": "https://..."}, "android": {...}}.
+// An "<os>-<arch>" entry (e.g. "android-arm") wins over the plain "<os>" one.
+fn do_check_custom_client_update(url: &str) -> ResultType<()> {
+    let client = crate::hbbs_http::create_http_client_with_url_strict(url)?;
+    let resp = client.get(url).send()?.error_for_status()?;
+    let manifest: Value = serde_json::from_slice(&resp.bytes()?)?;
+    let os = std::env::consts::OS;
+    let entry = manifest
+        .get(format!("{os}-{}", std::env::consts::ARCH))
+        .or_else(|| manifest.get(os));
+    let Some(entry) = entry else {
+        return Ok(());
+    };
+    let version = entry["version"].as_str().unwrap_or_default();
+    let download_url = entry["url"].as_str().unwrap_or_default();
+    if !download_url.starts_with("https://") {
+        bail!("Update manifest has no https download url for {os}");
+    }
+    if get_version_number(version) > get_version_number(crate::VERSION) {
+        #[cfg(feature = "flutter")]
+        {
+            let mut m = HashMap::new();
+            m.insert("name", "check_software_update_finish");
+            m.insert("url", download_url);
+            m.insert("version", version);
+            if let Ok(data) = serde_json::to_string(&m) {
+                let _ = crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, data);
+            }
+        }
     }
     Ok(())
 }
