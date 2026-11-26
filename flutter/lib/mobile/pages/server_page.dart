@@ -559,7 +559,15 @@ class ServerInfo extends StatelessWidget {
                           })
                     ])
             ]).marginOnly(left: 40, bottom: 15),
-            ConnectionStateNotification()
+            ConnectionStateNotification(),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: showTestConnectionDialog,
+                icon: const Icon(Icons.network_check),
+                label: Text(translate('Test connection')),
+              ),
+            ).marginOnly(left: 30, top: 4),
           ],
         ));
   }
